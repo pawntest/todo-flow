@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model List {
+  id        String   @id @default(uuid())
+  name      String
+  color     String?
+  order     Int
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  notes       String?
+  completed   Boolean   @default(false)
+  dueDate     DateTime?
+  order       Int
+
+  listId      String
+  list        List      @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  // Self-referential for subtasks
+  parentId    String?
+  parent      Task?     @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks    Task[]    @relation("TaskSubtasks")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  @@index([listId])
+  @@index([parentId])
+}
