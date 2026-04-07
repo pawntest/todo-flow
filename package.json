@@ -6,7 +6,8 @@
   "workspaces": [
     "client",
     "server",
-    "shared"
+    "shared",
+    "runner"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
@@ -17,7 +18,9 @@
     "build:server": "npm run build --workspace=server",
     "db:migrate": "npm run migrate --workspace=server",
     "db:studio": "npm run studio --workspace=server",
-    "db:seed": "npm run seed --workspace=server"
+    "db:seed": "npm run seed --workspace=server",
+    "runner": "npm run start --workspace=runner",
+    "runner:watch": "npm run watch --workspace=runner"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
