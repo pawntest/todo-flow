@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useUIStore } from '../../stores/uiStore';
 import { useTasksQuery, useCreateTask } from '../../hooks/useTasksQuery';
 import { useListsQuery } from '../../hooks/useListsQuery';
@@ -7,11 +7,23 @@ import { EmptyState } from '../ui/EmptyState';
 import { LoadingSkeleton } from '../ui/LoadingSkeleton';
 
 export const TaskList = () => {
-  const { selectedListId, setMobileView } = useUIStore();
+  const { selectedListId, setMobileView, runnerStatusFilter } = useUIStore();
   const { data: tasks, isLoading } = useTasksQuery(selectedListId);
   const { data: lists } = useListsQuery();
   const createTask = useCreateTask();
   const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    if (!runnerStatusFilter) return tasks;
+    return tasks.filter((t: any) => {
+      if (!t.assignedToRunner) return false;
+      if (runnerStatusFilter === 'pending') return t.runnerStatus === 'idle' || t.runnerStatus === 'running';
+      if (runnerStatusFilter === 'needs_input') return t.runnerStatus === 'needs_input';
+      if (runnerStatusFilter === 'done') return t.runnerStatus === 'done';
+      return false;
+    });
+  }, [tasks, runnerStatusFilter]);
 
   const currentList = lists?.find((l: any) => l.id === selectedListId);
 
@@ -81,12 +93,12 @@ export const TaskList = () => {
       </div>
 
       {/* Task Items */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-20">
         {isLoading ? (
           <LoadingSkeleton />
-        ) : tasks && tasks.length > 0 ? (
+        ) : filteredTasks.length > 0 ? (
           <div className="space-y-1">
-            {tasks.map((task: any) => (
+            {filteredTasks.map((task: any) => (
               <TaskItem key={task.id} task={task} depth={0} />
             ))}
           </div>

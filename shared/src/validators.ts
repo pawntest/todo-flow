@@ -29,6 +29,8 @@ export const updateTaskSchema = z.object({
   notes: z.string().max(5000).optional(),
   dueDate: z.string().datetime().nullable().optional(),
   completed: z.boolean().optional(),
+  assignedToRunner: z.boolean().optional(),
+  runnerStatus: z.enum(['idle', 'running', 'needs_input', 'done']).optional(),
 });
 
 export const reorderTasksSchema = z.object({

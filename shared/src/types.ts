@@ -7,6 +7,8 @@ export interface List {
   updatedAt: Date;
 }
 
+export type RunnerStatus = 'idle' | 'running' | 'needs_input' | 'done';
+
 export interface Task {
   id: string;
   title: string;
@@ -20,6 +22,8 @@ export interface Task {
   createdAt: Date;
   updatedAt: Date;
   completedAt: Date | null;
+  assignedToRunner: boolean;
+  runnerStatus: RunnerStatus;
 }
 
 export type CreateTaskDTO = {
@@ -33,6 +37,8 @@ export type CreateTaskDTO = {
 export type UpdateTaskDTO = Partial<CreateTaskDTO> & {
   completed?: boolean;
   order?: number;
+  assignedToRunner?: boolean;
+  runnerStatus?: RunnerStatus;
 };
 
 export type CreateListDTO = {

@@ -36,6 +36,9 @@ model Task {
   parent      Task?     @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks    Task[]    @relation("TaskSubtasks")
 
+  assignedToRunner Boolean  @default(false)
+  runnerStatus     String   @default("idle")
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   completedAt DateTime?

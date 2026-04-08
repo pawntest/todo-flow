@@ -30,7 +30,7 @@ async function getOrCreateList(name: string) {
 async function runOnce() {
   const list = await getOrCreateList(listNameArg);
   const tasks = await api.getTasks(list.id);
-  const pending = tasks.filter((t) => !t.completed && !t.parentId);
+  const pending = tasks.filter((t) => !t.completed && !t.parentId && t.assignedToRunner);
 
   if (pending.length === 0) {
     log(`実行待ちのタスクなし (リスト: "${list.name}")`);
@@ -41,6 +41,8 @@ async function runOnce() {
 
   for (const task of pending) {
     log(`▶ 実行中: ${task.title}`);
+    await api.updateStatus(task.id, "running");
+
     const result = await executeTask(task, cwdArg, maxTurns);
 
     const status = result.success ? "✅ 完了" : "❌ エラー";
@@ -52,7 +54,12 @@ async function runOnce() {
     ].join("\n");
 
     await api.updateNotes(task.id, notes);
-    await api.markComplete(task.id);
+    if (result.success) {
+      await api.updateStatus(task.id, "done");
+      await api.markComplete(task.id);
+    } else {
+      await api.updateStatus(task.id, "needs_input");
+    }
     log(`${status}: ${task.title}`);
   }
 }

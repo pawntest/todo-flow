@@ -17,6 +17,8 @@ export interface Task {
   listId: string;
   parentId: string | null;
   subtasks?: Task[];
+  assignedToRunner: boolean;
+  runnerStatus: string;
 }
 
 export class TodoFlowApi {
@@ -47,5 +49,9 @@ export class TodoFlowApi {
 
   async updateNotes(taskId: string, notes: string): Promise<void> {
     await this.client.patch(`/api/tasks/${taskId}`, { notes });
+  }
+
+  async updateStatus(taskId: string, runnerStatus: string): Promise<void> {
+    await this.client.patch(`/api/tasks/${taskId}`, { runnerStatus });
   }
 }

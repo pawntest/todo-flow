@@ -26,12 +26,28 @@ export const useCreateTask = () => {
 export const useUpdateTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => tasksApi.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    mutationFn: ({ id, data }: { id: string; data: any; listId?: string }) => tasksApi.update(id, data),
+    onMutate: async ({ id, data, listId }) => {
+      if (!listId) return;
+      await queryClient.cancelQueries({ queryKey: ['tasks', listId] });
+      const previous = queryClient.getQueryData(['tasks', listId]);
+      queryClient.setQueryData(['tasks', listId], (old: any[]) =>
+        updateTaskInList(old ?? [], id, data)
+      );
+      return { previous, listId };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined && context.listId) {
+        queryClient.setQueryData(['tasks', context.listId], context.previous);
+      }
+    },
+    onSettled: (_data, _err, { listId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', listId ?? ''] });
+    }
   });
 };
 
-function updateTaskInList(tasks: any[], id: string, updates: Partial<{ completed: boolean; completedAt: string | null }>): any[] {
+function updateTaskInList(tasks: any[], id: string, updates: Record<string, unknown>): any[] {
   return tasks.map(task => {
     if (task.id === id) return { ...task, ...updates };
     if (task.subtasks?.length) return { ...task, subtasks: updateTaskInList(task.subtasks, id, updates) };

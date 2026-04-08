@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { TaskList } from '../tasks/TaskList';
 import { TaskDetail } from '../tasks/TaskDetail';
+import { StatusOverlay } from '../ui/StatusOverlay';
 import { useUIStore } from '../../stores/uiStore';
 import { useListsQuery } from '../../hooks/useListsQuery';
 
@@ -38,6 +39,8 @@ export const AppLayout = () => {
           {isDetailPanelOpen && <TaskDetail />}
         </div>
       </div>
+
+      <StatusOverlay />
     </>
   );
 };
