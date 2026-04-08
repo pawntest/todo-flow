@@ -34,12 +34,10 @@ export class TaskService {
     return prisma.task.update({ where: { id }, data: updateData });
   }
 
-  async toggleComplete(id: string) {
-    const task = await prisma.task.findUnique({ where: { id } });
-    if (!task) throw new Error('Task not found');
+  async toggleComplete(id: string, completed: boolean) {
     return prisma.task.update({
       where: { id },
-      data: { completed: !task.completed, completedAt: !task.completed ? new Date() : null }
+      data: { completed, completedAt: completed ? new Date() : null }
     });
   }
 

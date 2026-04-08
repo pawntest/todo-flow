@@ -18,7 +18,7 @@ export const TaskItem = ({ task, depth }: TaskItemProps) => {
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleTask.mutate(task.id);
+    toggleTask.mutate({ id: task.id, listId: task.listId, completed: !task.completed });
   };
 
   const handleDelete = (e: React.MouseEvent) => {

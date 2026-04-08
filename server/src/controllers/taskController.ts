@@ -43,7 +43,8 @@ export const taskController = {
   async toggleComplete(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const task = await taskService.toggleComplete(id);
+      const { completed } = req.body as { completed: boolean };
+      const task = await taskService.toggleComplete(id, completed);
       res.json(task);
     } catch (error) {
       res.status(500).json({ error: 'Failed to toggle task' });

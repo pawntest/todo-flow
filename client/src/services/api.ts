@@ -20,6 +20,6 @@ export const tasksApi = {
   getById: (id: string) => api.get(`/tasks/${id}`),
   create: (data: any) => api.post('/tasks', data),
   update: (id: string, data: any) => api.patch(`/tasks/${id}`, data),
-  toggleComplete: (id: string) => api.patch(`/tasks/${id}/complete`),
+  toggleComplete: (id: string, completed: boolean) => api.patch(`/tasks/${id}/complete`, { completed }),
   delete: (id: string) => api.delete(`/tasks/${id}`)
 };
