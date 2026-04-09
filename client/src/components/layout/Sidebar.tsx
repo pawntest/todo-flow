@@ -70,7 +70,7 @@ export const Sidebar = () => {
         ))}
       </div>
 
-      <div className="p-3 border-t">
+      <div className="p-3 pb-24 border-t md:pb-3">
         {isCreating ? (
           <form onSubmit={handleCreateList} className="space-y-2">
             <input

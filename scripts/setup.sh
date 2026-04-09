@@ -10,14 +10,22 @@ echo "=============================="
 echo "  Todo-Flow セットアップ"
 echo "=============================="
 
-# .env がなければ .env.example からコピー
-if [ ! -f "$ROOT_DIR/server/.env" ]; then
+# ルートの .env がなければ .env.example からコピー
+if [ ! -f "$ROOT_DIR/.env" ]; then
   if [ -f "$ROOT_DIR/.env.example" ]; then
-    cp "$ROOT_DIR/.env.example" "$ROOT_DIR/server/.env"
-    echo "✅ server/.env を作成しました (.env.example からコピー)"
+    cp "$ROOT_DIR/.env.example" "$ROOT_DIR/.env"
+    echo "✅ .env を作成しました (.env.example からコピー)"
+    echo "⚠️  .env の ANTHROPIC_API_KEY を設定してください（runner使用時）"
   fi
 else
-  echo "ℹ️  server/.env はすでに存在します"
+  echo "ℹ️  .env はすでに存在します"
+fi
+
+# server/.env がなければコピー
+if [ ! -f "$ROOT_DIR/server/.env" ]; then
+  cp "$ROOT_DIR/.env" "$ROOT_DIR/server/.env" 2>/dev/null || \
+    cp "$ROOT_DIR/.env.example" "$ROOT_DIR/server/.env"
+  echo "✅ server/.env を作成しました"
 fi
 
 # npm install（全ワークスペース）
