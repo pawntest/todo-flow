@@ -24,6 +24,7 @@ export const TaskList = ({ listId }: TaskListProps) => {
       if (!t.assignedToRunner) return false;
       if (runnerStatusFilter === 'pending') return t.runnerStatus === 'idle' || t.runnerStatus === 'running';
       if (runnerStatusFilter === 'needs_input') return t.runnerStatus === 'needs_input';
+      if (runnerStatusFilter === 'error') return t.runnerStatus === 'error';
       if (runnerStatusFilter === 'done') return t.runnerStatus === 'done';
       return false;
     });

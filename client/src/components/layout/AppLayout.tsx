@@ -35,7 +35,7 @@ export const AppLayout = () => {
       </div>
 
       {/* Mobile Layout - one panel at a time */}
-      <div className="flex md:hidden h-screen bg-gray-50 overflow-hidden">
+      <div className="relative flex md:hidden h-screen bg-gray-50 overflow-hidden">
         <div className={`absolute inset-0 transition-transform duration-300 ${mobileView === 'sidebar' ? 'translate-x-0' : '-translate-x-full'}`}>
           <Sidebar />
         </div>

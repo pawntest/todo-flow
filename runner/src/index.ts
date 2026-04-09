@@ -41,26 +41,38 @@ async function runOnce() {
 
   for (const task of pending) {
     log(`▶ 実行中: ${task.title}`);
-    await api.updateStatus(task.id, "running");
+    try {
+      await api.updateStatus(task.id, "running");
 
-    const result = await executeTask(task, cwdArg, maxTurns);
+      const result = await executeTask(task, cwdArg, maxTurns);
 
-    const status = result.success ? "✅ 完了" : "❌ エラー";
-    const notes = [
-      `[todo-flow runner ${new Date().toISOString()}]`,
-      `ステータス: ${status}`,
-      "",
-      result.output || "(出力なし)",
-    ].join("\n");
+      const status = result.success ? "✅ 完了" : "❌ 保留";
+      const notes = [
+        `[todo-flow runner ${new Date().toISOString()}]`,
+        `ステータス: ${status}`,
+        "",
+        result.output || "(出力なし)",
+      ].join("\n");
 
-    await api.updateNotes(task.id, notes);
-    if (result.success) {
-      await api.updateStatus(task.id, "done");
-      await api.markComplete(task.id);
-    } else {
-      await api.updateStatus(task.id, "needs_input");
+      await api.updateNotes(task.id, notes);
+      if (result.success) {
+        await api.updateStatus(task.id, "done");
+        await api.markComplete(task.id);
+        log(`✅ 完了: ${task.title}`);
+      } else {
+        await api.updateStatus(task.id, "needs_input");
+        log(`⚠️ 保留: ${task.title}`);
+      }
+    } catch (err: any) {
+      log(`🔴 エラー: ${task.title} — ${err.message}`);
+      await api.updateStatus(task.id, "error").catch(() => {});
+      await api.updateNotes(task.id, [
+        `[todo-flow runner ${new Date().toISOString()}]`,
+        `ステータス: ❌ エラー`,
+        "",
+        err.message || "(不明なエラー)",
+      ].join("\n")).catch(() => {});
     }
-    log(`${status}: ${task.title}`);
   }
 }
 

@@ -7,7 +7,7 @@ export interface List {
   updatedAt: Date;
 }
 
-export type RunnerStatus = 'idle' | 'running' | 'needs_input' | 'done';
+export type RunnerStatus = 'idle' | 'running' | 'needs_input' | 'error' | 'done';
 
 export interface Task {
   id: string;

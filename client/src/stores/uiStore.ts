@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 type MobileView = 'sidebar' | 'tasks' | 'detail';
-export type RunnerStatusFilter = 'pending' | 'needs_input' | 'done' | null;
+export type RunnerStatusFilter = 'pending' | 'needs_input' | 'error' | 'done' | null;
 
 interface UIStore {
   selectedListId: string | null;

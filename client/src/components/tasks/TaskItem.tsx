@@ -12,6 +12,7 @@ const STATUS_DOT: Record<string, string> = {
   idle: 'bg-gray-400',
   running: 'bg-green-500',
   needs_input: 'bg-yellow-400',
+  error: 'bg-red-500',
   done: 'bg-purple-500',
 };
 

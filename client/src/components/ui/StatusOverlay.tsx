@@ -11,6 +11,7 @@ export const StatusOverlay = () => {
     return {
       pending: assigned.filter((t: any) => t.runnerStatus === 'idle' || t.runnerStatus === 'running').length,
       needs_input: assigned.filter((t: any) => t.runnerStatus === 'needs_input').length,
+      error: assigned.filter((t: any) => t.runnerStatus === 'error').length,
       done: assigned.filter((t: any) => t.runnerStatus === 'done').length,
     };
   }, [tasks]);
@@ -48,7 +49,16 @@ export const StatusOverlay = () => {
           <span>{counts.needs_input}</span>
         </button>
 
-        {/* Button 3: done */}
+        {/* Button 3: error */}
+        <button
+          onClick={() => toggle('error')}
+          className={`${btnBase} ${runnerStatusFilter === 'error' ? btnActive : btnInactive}`}
+        >
+          <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+          <span>{counts.error}</span>
+        </button>
+
+        {/* Button 4: done */}
         <button
           onClick={() => toggle('done')}
           className={`${btnBase} ${runnerStatusFilter === 'done' ? btnActive : btnInactive}`}
