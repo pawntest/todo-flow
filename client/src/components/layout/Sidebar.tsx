@@ -45,10 +45,8 @@ export const Sidebar = () => {
         {lists?.map((list: any) => (
           <div
             key={list.id}
-            onClick={() => selectList(list.id)}
-            className={`flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer mb-1 transition-colors ${
-              selectedListId === list.id ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
-            }`}
+            onClick={() => { if (window.innerWidth < 768) selectList(list.id); }}
+            className="flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer mb-1 transition-colors hover:bg-gray-100 text-gray-700"
           >
             <div className="flex items-center gap-3">
               <span

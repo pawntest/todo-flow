@@ -69,7 +69,7 @@ export const TaskItem = ({ task, depth }: TaskItemProps) => {
         className={`flex items-start gap-3 px-3 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors ${
           depth > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''
         }`}
-        onClick={() => selectTask(task.id)}
+        onClick={() => selectTask(task.id, task.listId)}
       >
         {/* Checkbox with status dot */}
         <div

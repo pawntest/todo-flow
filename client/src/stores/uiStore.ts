@@ -10,7 +10,7 @@ interface UIStore {
   mobileView: MobileView;
   runnerStatusFilter: RunnerStatusFilter;
   selectList: (id: string | null) => void;
-  selectTask: (id: string | null) => void;
+  selectTask: (id: string | null, listId?: string) => void;
   closeDetailPanel: () => void;
   setMobileView: (view: MobileView) => void;
   setRunnerStatusFilter: (filter: RunnerStatusFilter) => void;
@@ -23,7 +23,7 @@ export const useUIStore = create<UIStore>((set) => ({
   mobileView: 'sidebar',
   runnerStatusFilter: null,
   selectList: (id) => set({ selectedListId: id, mobileView: 'tasks' }),
-  selectTask: (id) => set({ selectedTaskId: id, isDetailPanelOpen: !!id, mobileView: id ? 'detail' : 'tasks' }),
+  selectTask: (id, listId?) => set((state) => ({ selectedTaskId: id, selectedListId: listId ?? state.selectedListId, isDetailPanelOpen: !!id, mobileView: id ? 'detail' : 'tasks' })),
   closeDetailPanel: () => set({ isDetailPanelOpen: false, selectedTaskId: null, mobileView: 'tasks' }),
   setMobileView: (view) => set({ mobileView: view }),
   setRunnerStatusFilter: (filter) => set({ runnerStatusFilter: filter }),
