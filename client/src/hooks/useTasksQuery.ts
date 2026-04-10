@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query';
 import { tasksApi } from '../services/api';
+import { useListsQuery } from './useListsQuery';
 
 export const useTasksQuery = (listId: string | null) => {
   return useQuery({
@@ -9,8 +10,33 @@ export const useTasksQuery = (listId: string | null) => {
       const { data } = await tasksApi.getForList(listId);
       return data;
     },
-    enabled: !!listId
+    enabled: !!listId,
+    // Auto-poll every 3s while any task is running
+    refetchInterval: (query) => {
+      const data = query.state.data as any[] | undefined;
+      return data?.some((t: any) => t.runnerStatus === 'running') ? 3000 : false;
+    },
   });
+};
+
+// Aggregate tasks from ALL lists — used by StatusOverlay in board view
+export const useAllTasksFlat = () => {
+  const { data: lists } = useListsQuery();
+  const queries = useQueries({
+    queries: (lists ?? []).map((list: any) => ({
+      queryKey: ['tasks', list.id],
+      queryFn: async () => {
+        const { data } = await tasksApi.getForList(list.id);
+        return data;
+      },
+      enabled: !!list.id,
+      refetchInterval: (query: any) => {
+        const data = query.state.data as any[] | undefined;
+        return data?.some((t: any) => t.runnerStatus === 'running') ? 3000 : false;
+      },
+    })),
+  });
+  return queries.flatMap((q) => (q.data ?? []) as any[]);
 };
 
 export const useCreateTask = () => {

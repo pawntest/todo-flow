@@ -73,7 +73,7 @@ export const TaskDetail = () => {
           <input
             type="checkbox"
             checked={actualTask.completed}
-            onChange={() => toggleTask.mutate(actualTask.id)}
+            onChange={() => toggleTask.mutate({ id: actualTask.id, listId: selectedListId!, completed: !actualTask.completed })}
             className="mt-1 w-5 h-5 rounded border-gray-300 cursor-pointer"
           />
           <span className={`text-base font-medium flex-1 ${actualTask.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>

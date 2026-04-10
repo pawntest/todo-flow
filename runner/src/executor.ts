@@ -9,14 +9,36 @@ export interface ExecutionResult {
 export async function executeTask(
   task: Task,
   cwd: string,
-  maxTurns: number
+  maxTurns: number,
+  context: { listName?: string } = {}
 ): Promise<ExecutionResult> {
   const lines: string[] = [];
   let success = true;
 
+  // Build a rich prompt with all available context
+  const promptParts: string[] = [];
+  if (context.listName) {
+    promptParts.push(`# プロジェクト / リスト: ${context.listName}`);
+  }
+  promptParts.push(`# タスク\n${task.title}`);
+  if (task.notes) {
+    // Filter out previous runner output headers
+    const userNotes = task.notes
+      .split('\n')
+      .filter(l => !l.startsWith('[todo-flow runner') && !l.startsWith('ステータス:'))
+      .join('\n')
+      .trim();
+    if (userNotes) {
+      promptParts.push(`# 補足・詳細\n${userNotes}`);
+    }
+  }
+  promptParts.push(`# 作業ディレクトリ\n${cwd}`);
+
+  const prompt = promptParts.join('\n\n');
+
   try {
     for await (const message of query({
-      prompt: task.title,
+      prompt,
       options: {
         cwd,
         allowedTools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],

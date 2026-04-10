@@ -30,7 +30,10 @@ async function getOrCreateList(name: string) {
 async function runOnce() {
   const list = await getOrCreateList(listNameArg);
   const tasks = await api.getTasks(list.id);
-  const pending = tasks.filter((t) => !t.completed && !t.parentId && t.assignedToRunner);
+  // idleのタスクのみ対象（running/done/error/needs_inputは再実行しない）
+  const pending = tasks.filter(
+    (t) => !t.completed && !t.parentId && t.assignedToRunner && t.runnerStatus === "idle"
+  );
 
   if (pending.length === 0) {
     log(`実行待ちのタスクなし (リスト: "${list.name}")`);
@@ -44,7 +47,7 @@ async function runOnce() {
     try {
       await api.updateStatus(task.id, "running");
 
-      const result = await executeTask(task, cwdArg, maxTurns);
+      const result = await executeTask(task, cwdArg, maxTurns, { listName: list.name });
 
       const status = result.success ? "✅ 完了" : "❌ 保留";
       const notes = [

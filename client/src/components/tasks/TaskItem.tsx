@@ -16,6 +16,17 @@ const STATUS_DOT: Record<string, string> = {
   done: 'bg-purple-500',
 };
 
+function getNotesPreview(notes: string | null): string | null {
+  if (!notes) return null;
+  const preview = notes
+    .split('\n')
+    .filter(l => l.trim() && !l.startsWith('[') && !l.startsWith('ステータス:'))
+    .join(' ')
+    .trim()
+    .slice(0, 90);
+  return preview || null;
+}
+
 export const TaskItem = ({ task, depth }: TaskItemProps) => {
   const { selectTask } = useUIStore();
   const toggleTask = useToggleTask();
@@ -50,6 +61,11 @@ export const TaskItem = ({ task, depth }: TaskItemProps) => {
     });
   };
 
+  const handleRetry = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateTask.mutate({ id: task.id, listId: task.listId, data: { runnerStatus: 'idle' } });
+  };
+
   const handleAddSubtask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subtaskTitle.trim()) return;
@@ -63,11 +79,14 @@ export const TaskItem = ({ task, depth }: TaskItemProps) => {
   };
 
   const dotColor = STATUS_DOT[task.runnerStatus ?? 'idle'] ?? STATUS_DOT.idle;
+  const notesPreview = getNotesPreview(task.notes);
+  const isErrorState = task.assignedToRunner && (task.runnerStatus === 'error' || task.runnerStatus === 'needs_input');
+  const isRunning = task.assignedToRunner && task.runnerStatus === 'running';
 
   return (
     <div>
       <div
-        className={`flex items-start gap-3 px-3 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors ${
+        className={`flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors ${
           depth > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''
         }`}
         onClick={() => selectTask(task.id, task.listId)}
@@ -78,7 +97,7 @@ export const TaskItem = ({ task, depth }: TaskItemProps) => {
           onClick={(e) => { e.stopPropagation(); handleToggle(e); }}
         >
           {task.assignedToRunner && (
-            <span className={`absolute top-0 left-0 w-2.5 h-2.5 rounded-full ${dotColor} ring-2 ring-white`} />
+            <span className={`absolute top-0 left-0 w-2.5 h-2.5 rounded-full ${dotColor} ring-2 ring-white ${isRunning ? 'animate-pulse' : ''}`} />
           )}
           <input
             type="checkbox"
@@ -103,6 +122,12 @@ export const TaskItem = ({ task, depth }: TaskItemProps) => {
               {task.subtasks.filter((s: any) => s.completed).length}/{task.subtasks.length} subtasks
             </div>
           )}
+          {/* Runner output preview */}
+          {notesPreview && task.assignedToRunner && task.runnerStatus !== 'idle' && (
+            <div className={`text-xs mt-1.5 truncate ${task.runnerStatus === 'error' ? 'text-red-400' : task.runnerStatus === 'needs_input' ? 'text-yellow-600' : 'text-gray-400'}`}>
+              {notesPreview}
+            </div>
+          )}
           {showSubtaskInput && (
             <form onSubmit={handleAddSubtask} className="mt-2" onClick={(e) => e.stopPropagation()}>
               <input
@@ -119,6 +144,17 @@ export const TaskItem = ({ task, depth }: TaskItemProps) => {
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Retry button for error/needs_input */}
+          {isErrorState && (
+            <button
+              onClick={handleRetry}
+              title="再実行（idleにリセット）"
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg text-base"
+            >
+              ↺
+            </button>
+          )}
+
           {/* Orange toggle: assign to ClaudeCode */}
           <button
             onClick={handleToggleAssign}
