@@ -1,4 +1,22 @@
 #!/usr/bin/env node
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+// ルートの .env を読み込む（ANTHROPIC_API_KEY 等の設定用）
+// Claude Code にログイン済みの場合は不要
+{
+  const envPath = resolve(process.cwd(), ".env");
+  if (existsSync(envPath)) {
+    for (const line of readFileSync(envPath, "utf-8").split("\n")) {
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+      if (!m) continue;
+      const key = m[1];
+      const val = m[2].trim().replace(/^(['"])(.*)\1$/, "$2");
+      if (!(key in process.env)) process.env[key] = val;
+    }
+  }
+}
+
 import { TodoFlowApi } from "./api.js";
 import { executeTask } from "./executor.js";
 
