@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-// ルートの .env を読み込む（ANTHROPIC_API_KEY 等の設定用）
+// runner/src/index.ts の場所からプロジェクトルートを特定
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PROJECT_ROOT = resolve(__dirname, "../../"); // runner/src -> runner -> project root
+
+// .env をプロジェクトルートから読み込む（ANTHROPIC_API_KEY 等の設定用）
 // Claude Code にログイン済みの場合は不要
 {
-  const envPath = resolve(process.cwd(), ".env");
+  const envPath = resolve(PROJECT_ROOT, ".env");
   if (existsSync(envPath)) {
     for (const line of readFileSync(envPath, "utf-8").split("\n")) {
       const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
@@ -23,8 +29,8 @@ import { executeTask } from "./executor.js";
 // --- CLI引数パース ---
 const args = process.argv.slice(2);
 const watchMode = args.includes("--watch") || args.includes("-w");
-const listNameArg = args.find((a) => !a.startsWith("-")) ?? "Claude Code";
-const cwdArg = args.find((a) => a.startsWith("--cwd="))?.split("=")[1] ?? process.cwd();
+// デフォルトCWDはプロジェクトルート（runner/ではなく）
+const cwdArg = args.find((a) => a.startsWith("--cwd="))?.split("=")[1] ?? PROJECT_ROOT;
 const intervalArg = args.find((a) => a.startsWith("--interval="))?.split("=")[1];
 const intervalSec = parseInt(intervalArg ?? "10", 10);
 const maxTurnsArg = args.find((a) => a.startsWith("--max-turns="))?.split("=")[1];
@@ -37,69 +43,62 @@ function log(msg: string) {
   console.log(`[${new Date().toLocaleTimeString()}] ${msg}`);
 }
 
-async function getOrCreateList(name: string) {
-  const lists = await api.getLists();
-  const found = lists.find((l) => l.name === name);
-  if (found) return found;
-  log(`リスト "${name}" が見つからないため作成します`);
-  return api.createList(name);
-}
-
 async function runOnce() {
-  const list = await getOrCreateList(listNameArg);
-  const tasks = await api.getTasks(list.id);
-  // idleのタスクのみ対象（running/done/error/needs_inputは再実行しない）
-  const pending = tasks.filter(
-    (t) => !t.completed && !t.parentId && t.assignedToRunner && t.runnerStatus === "idle"
-  );
+  // 全リストを取得して assignedToRunner=true かつ idle のタスクを処理
+  const lists = await api.getLists();
 
-  if (pending.length === 0) {
-    log(`実行待ちのタスクなし (リスト: "${list.name}")`);
-    return;
+  let totalPending = 0;
+  for (const list of lists) {
+    const tasks = await api.getTasks(list.id);
+    const pending = tasks.filter(
+      (t) => !t.completed && !t.parentId && t.assignedToRunner && t.runnerStatus === "idle"
+    );
+    totalPending += pending.length;
+
+    for (const task of pending) {
+      log(`▶ [${list.name}] ${task.title}`);
+      try {
+        await api.updateStatus(task.id, "running");
+
+        const result = await executeTask(task, cwdArg, maxTurns, { listName: list.name });
+
+        const status = result.success ? "✅ 完了" : "❌ 保留";
+        const notes = [
+          `[todo-flow runner ${new Date().toISOString()}]`,
+          `ステータス: ${status}`,
+          "",
+          result.output || "(出力なし)",
+        ].join("\n");
+
+        await api.updateNotes(task.id, notes);
+        if (result.success) {
+          await api.updateStatus(task.id, "done");
+          await api.markComplete(task.id);
+          log(`✅ [${list.name}] ${task.title}`);
+        } else {
+          await api.updateStatus(task.id, "needs_input");
+          log(`⚠️ [${list.name}] ${task.title}`);
+        }
+      } catch (err: any) {
+        log(`🔴 [${list.name}] ${task.title} — ${err.message}`);
+        await api.updateStatus(task.id, "error").catch(() => {});
+        await api.updateNotes(task.id, [
+          `[todo-flow runner ${new Date().toISOString()}]`,
+          `ステータス: ❌ エラー`,
+          "",
+          err.message || "(不明なエラー)",
+        ].join("\n")).catch(() => {});
+      }
+    }
   }
 
-  log(`${pending.length} 件のタスクを実行します (リスト: "${list.name}")`);
-
-  for (const task of pending) {
-    log(`▶ 実行中: ${task.title}`);
-    try {
-      await api.updateStatus(task.id, "running");
-
-      const result = await executeTask(task, cwdArg, maxTurns, { listName: list.name });
-
-      const status = result.success ? "✅ 完了" : "❌ 保留";
-      const notes = [
-        `[todo-flow runner ${new Date().toISOString()}]`,
-        `ステータス: ${status}`,
-        "",
-        result.output || "(出力なし)",
-      ].join("\n");
-
-      await api.updateNotes(task.id, notes);
-      if (result.success) {
-        await api.updateStatus(task.id, "done");
-        await api.markComplete(task.id);
-        log(`✅ 完了: ${task.title}`);
-      } else {
-        await api.updateStatus(task.id, "needs_input");
-        log(`⚠️ 保留: ${task.title}`);
-      }
-    } catch (err: any) {
-      log(`🔴 エラー: ${task.title} — ${err.message}`);
-      await api.updateStatus(task.id, "error").catch(() => {});
-      await api.updateNotes(task.id, [
-        `[todo-flow runner ${new Date().toISOString()}]`,
-        `ステータス: ❌ エラー`,
-        "",
-        err.message || "(不明なエラー)",
-      ].join("\n")).catch(() => {});
-    }
+  if (totalPending === 0) {
+    log("実行待ちのタスクなし（全リスト）");
   }
 }
 
 async function main() {
   console.log("=== Todo-Flow Runner ===");
-  console.log(`  リスト    : ${listNameArg}`);
   console.log(`  作業ディレクトリ: ${cwdArg}`);
   console.log(`  APIサーバー: ${apiUrl}`);
   console.log(`  最大ターン数: ${maxTurns}`);
