@@ -38,6 +38,7 @@ model Task {
 
   assignedToRunner Boolean  @default(false)
   runnerStatus     String   @default("idle")
+  runnerLog        String   @default("[]")
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

@@ -1,5 +1,5 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
-import type { Task } from "./api.js";
+import type { Task, LogEntry } from "./api.js";
 
 export interface ExecutionResult {
   output: string;
@@ -10,31 +10,47 @@ export async function executeTask(
   task: Task,
   cwd: string,
   maxTurns: number,
-  context: { listName?: string } = {}
+  context: { listName?: string; previousLog?: LogEntry[] } = {}
 ): Promise<ExecutionResult> {
   const lines: string[] = [];
   let success = true;
 
-  // Build a rich prompt with all available context
   const promptParts: string[] = [];
   if (context.listName) {
     promptParts.push(`# プロジェクト / リスト: ${context.listName}`);
   }
   promptParts.push(`# タスク\n${task.title}`);
+
+  // User-written notes (excluding runner output)
   if (task.notes) {
-    // Filter out previous runner output headers
     const userNotes = task.notes
-      .split('\n')
-      .filter(l => !l.startsWith('[todo-flow runner') && !l.startsWith('ステータス:'))
-      .join('\n')
+      .split("\n")
+      .filter(
+        (l) =>
+          !l.startsWith("[todo-flow runner") && !l.startsWith("ステータス:")
+      )
+      .join("\n")
       .trim();
-    if (userNotes) {
-      promptParts.push(`# 補足・詳細\n${userNotes}`);
-    }
+    if (userNotes) promptParts.push(`# 補足・詳細\n${userNotes}`);
   }
+
+  // Previous conversation from runnerLog
+  const prevMessages = (context.previousLog ?? []).filter(
+    (m) => m.role !== "system"
+  );
+  if (prevMessages.length > 0) {
+    const history = prevMessages
+      .map(
+        (m) =>
+          `[${m.role === "assistant" ? "Claude Code" : "ユーザー"}]:\n${m.content}`
+      )
+      .join("\n\n");
+    promptParts.push(`# これまでの会話\n${history}`);
+  }
+
   promptParts.push(`# 作業ディレクトリ\n${cwd}`);
 
-  const prompt = promptParts.join('\n\n');
+  const prompt = promptParts.join("\n\n");
 
   try {
     for await (const message of query({

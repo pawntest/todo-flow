@@ -1,5 +1,11 @@
 import axios from "axios";
 
+export interface LogEntry {
+  role: "system" | "assistant" | "user";
+  content: string;
+  ts: string;
+}
+
 export interface List {
   id: string;
   name: string;
@@ -19,6 +25,7 @@ export interface Task {
   subtasks?: Task[];
   assignedToRunner: boolean;
   runnerStatus: string;
+  runnerLog: string; // JSON-encoded LogEntry[]
 }
 
 export class TodoFlowApi {
@@ -43,15 +50,27 @@ export class TodoFlowApi {
     return res.data;
   }
 
-  async markComplete(taskId: string): Promise<void> {
-    await this.client.patch(`/api/tasks/${taskId}/complete`);
+  async getTask(taskId: string): Promise<Task> {
+    const res = await this.client.get<Task>(`/api/tasks/${taskId}`);
+    return res.data;
   }
 
-  async updateNotes(taskId: string, notes: string): Promise<void> {
-    await this.client.patch(`/api/tasks/${taskId}`, { notes });
+  async markComplete(taskId: string): Promise<void> {
+    await this.client.patch(`/api/tasks/${taskId}/complete`, { completed: true });
+  }
+
+  async updateRunnerLog(taskId: string, log: LogEntry[]): Promise<void> {
+    await this.client.patch(`/api/tasks/${taskId}`, { runnerLog: JSON.stringify(log) });
   }
 
   async updateStatus(taskId: string, runnerStatus: string): Promise<void> {
     await this.client.patch(`/api/tasks/${taskId}`, { runnerStatus });
+  }
+
+  async updateStatusAndLog(taskId: string, runnerStatus: string, log: LogEntry[]): Promise<void> {
+    await this.client.patch(`/api/tasks/${taskId}`, {
+      runnerStatus,
+      runnerLog: JSON.stringify(log),
+    });
   }
 }

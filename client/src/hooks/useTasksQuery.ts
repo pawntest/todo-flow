@@ -11,10 +11,13 @@ export const useTasksQuery = (listId: string | null) => {
       return data;
     },
     enabled: !!listId,
-    // Auto-poll every 3s while any task is running
+    // Auto-poll every 3s while any assigned task is active
     refetchInterval: (query) => {
       const data = query.state.data as any[] | undefined;
-      return data?.some((t: any) => t.runnerStatus === 'running') ? 3000 : false;
+      const hasActive = data?.some(
+        (t: any) => t.assignedToRunner && (t.runnerStatus === 'running' || t.runnerStatus === 'idle')
+      );
+      return hasActive ? 3000 : false;
     },
   });
 };

@@ -24,6 +24,7 @@ export interface Task {
   completedAt: Date | null;
   assignedToRunner: boolean;
   runnerStatus: RunnerStatus;
+  runnerLog: string; // JSON-encoded LogEntry[]
 }
 
 export type CreateTaskDTO = {
